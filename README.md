@@ -105,3 +105,58 @@ uv run streamlit run src/snomed_annotation_audit/gui/app.py
 ```
 
 The GUI supports selecting an INCEpTION project ZIP and a policy HDF5, choosing annotation layers, and running the inclusion-list/exclusion-list audit.
+
+## Docker images and helper scripts
+
+There are default images hosted at:
+
+```text
+ghcr.io/fmatthies/snomed-annotation-audit/audit-image:<version>
+```
+
+The repository includes helper scripts for common Docker runs.
+
+### Start the GUI
+
+Use `start-gui.sh` to run the default published GUI image:
+
+```bash
+./start-gui.sh
+```
+
+Defaults:
+
+- image: `ghcr.io/fmatthies/snomed-annotation-audit/audit-image`
+- version: `1.0.0`
+- host port: `8501`
+
+You can override the port and/or image version:
+
+```bash
+./start-gui.sh 8502
+./start-gui.sh 8502 1.0.0
+```
+
+### Log an INCEpTION project ZIP
+
+Use `log-inception-docs.sh` to run `log-critical-documents` in Docker against an INCEpTION project ZIP stored in `./data`:
+
+```bash
+./log-inception-docs.sh PROJECT_EXPORT.zip
+```
+
+The script mounts local `./data` to `/app/data` in the container. Put the INCEpTION ZIP and the required HDF5 policy file in `./data`; generated reports are written back there.
+
+The second argument optionally selects the image version:
+
+```bash
+./log-inception-docs.sh PROJECT_EXPORT.zip 1.0.0
+```
+
+Example direct Docker invocation:
+
+```bash
+docker run --rm -p 8501:8501 \
+  ghcr.io/fmatthies/snomed-annotation-audit/audit-image:1.0.0 \
+  start-gui
+```

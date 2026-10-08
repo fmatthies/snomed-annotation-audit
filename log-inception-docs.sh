@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DOCKER_IMAGE=""
+DOCKER_IMAGE="ghcr.io/fmatthies/snomed-annotation-audit/audit-image"
 CURRENT_VERSION="1.0.0"
 
 if [[ ! -d ./data ]]; then
