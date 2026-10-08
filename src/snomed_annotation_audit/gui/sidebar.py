@@ -1,0 +1,193 @@
+"""Sidebar input controls for the Streamlit GUI."""
+
+from __future__ import annotations
+
+import dataclasses
+import pathlib
+import tempfile
+from typing import Any
+
+import streamlit as st
+
+from snomed_annotation_audit.inception import get_project_zip
+
+from .file_sources import render_file_source_selector
+
+
+@dataclasses.dataclass
+class GuiInputs:
+    load_annotators: bool
+    hdf5_file: Any
+    annotation_types_text: str
+    ignore_overlap_types_text: str
+    ignore_overlap_mode: str
+    id_prefix: str
+    id_feature: str
+    data_dir: pathlib.Path
+    hdf5_temp_path: pathlib.Path | None = None
+
+
+def render_sidebar() -> GuiInputs:
+    # Remove session state left over from the pre-audit GUI target selector.
+    # The audit-only GUI has no Policy-rules/Active-release switch.
+    st.session_state.pop("target_view_selector", None)
+
+    with st.sidebar:
+        st.header("Inputs")
+        load_annotators = st.checkbox("Load annotators from ZIP", value=True)
+        use_api = st.toggle("Use INCEpTION API", value=False)
+        st.header("Server-side files")
+        data_dir = pathlib.Path(
+            st.text_input(
+                "Data directory",
+                value=st.session_state.get("server_data_dir", "data"),
+                help="Directory on the Streamlit server used to list large HDF5/ZIP files without browser upload.",
+            )
+        ).expanduser()
+        st.session_state["server_data_dir"] = str(data_dir)
+        if data_dir.exists() and data_dir.is_dir():
+            st.caption(f"Using server data directory: `{data_dir.resolve()}`")
+        else:
+            st.warning(f"Server data directory not found: `{data_dir}`")
+
+        if use_api:
+            _render_inception_api_controls()
+        else:
+            project_selection = render_file_source_selector(
+                "INCEpTION project ZIP",
+                key="inception_project_zip",
+                data_dir=data_dir,
+                suffixes=(".zip",),
+                upload_types=("zip",),
+                default_source="Upload",
+                help="Project ZIPs can be large; use data-directory or server-path mode if browser upload exceeds Streamlit limits.",
+            )
+            st.session_state["zip_file"] = project_selection.value
+
+        hdf5_selection = render_file_source_selector(
+            "SNOMED HDF5",
+            key="snomed_hdf5",
+            data_dir=data_dir,
+            suffixes=(".hdf5", ".h5"),
+            upload_types=("hdf5", "h5"),
+            default_source="Upload",
+            help="Use upload by default, or select a large HDF5 already present in the server data directory.",
+        )
+        hdf5_file = hdf5_selection.value
+
+        with st.expander("Annotation layers", expanded=False):
+            annotation_types_text = st.text_area(
+                "Target annotation types to check",
+                value="gemtex.Concept\nwebanno.custom.Concept",
+                help="One UIMA layer/type per line. Faulty SNOMED code checks run on these annotations.",
+            )
+            ignore_overlap_types_text = st.text_area(
+                "Ignore faulty target annotations overlapping these types",
+                value="webanno.custom.No_Human",
+                help=(
+                    "One UIMA layer/type per line. Faulty target annotations overlapping these layers "
+                    "are reported separately and excluded from the critical count. Default: "
+                    "webanno.custom.No_Human."
+                ),
+            )
+            ignore_overlap_mode = st.selectbox(
+                "Ignore overlap mode",
+                options=["overlap", "covered-by", "contains", "exact"],
+                index=0,
+                help="Controls how target annotations must match ignore annotations to be ignored.",
+            )
+            id_feature = st.text_input(
+                "SNOMED ID feature name",
+                value=st.session_state.get("snomed_annotation_id_feature", "id"),
+                key="snomed_annotation_id_feature",
+                help="Name of the string feature on the target annotation layer that stores the SNOMED CT ID/SCTID.",
+            )
+            id_prefix = st.text_input(
+                "SNOMED ID prefix in annotation feature",
+                value=st.session_state.get("snomed_annotation_id_prefix", "http://snomed.info/id/"),
+                key="snomed_annotation_id_prefix",
+                help=(
+                    "Prefix used before the SCTID in the configured ID feature. "
+                    "For plain SCTIDs, leave this empty."
+                ),
+            )
+
+    return GuiInputs(
+        load_annotators=load_annotators,
+        hdf5_file=hdf5_file,
+        annotation_types_text=annotation_types_text,
+        ignore_overlap_types_text=ignore_overlap_types_text,
+        ignore_overlap_mode=ignore_overlap_mode,
+        id_prefix=id_prefix,
+        id_feature=id_feature,
+        data_dir=data_dir,
+    )
+
+
+def _render_inception_api_controls() -> None:
+    if "api_credentials" not in st.session_state:
+        st.session_state["api_credentials"] = {
+            "url": "http://localhost:8080",
+            "username": "",
+            "password": "",
+        }
+
+    with st.form("inception_api_form"):
+        url = st.text_input(
+            "INCEpTION API URL", value=st.session_state["api_credentials"]["url"]
+        )
+        username = st.text_input(
+            "REMOTE Role Username",
+            value=st.session_state["api_credentials"]["username"],
+        )
+        password = st.text_input(
+            "REMOTE Role Password",
+            type="password",
+            value=st.session_state["api_credentials"]["password"],
+        )
+        submitted = st.form_submit_button("Get Projects")
+        if submitted:
+            st.session_state["api_credentials"] = {
+                "url": url,
+                "username": username,
+                "password": password,
+            }
+            try:
+                project_tmp = tempfile.mkdtemp("snomed_gui_dir")
+                st.session_state["projects"] = get_project_zip(
+                    project_tmp, url, username, password, None, False
+                )
+                st.success(f"Found {len(st.session_state['projects'])} projects.")
+            except RuntimeError:
+                st.error(
+                    "Could not connect to INCEpTION API. Please check credentials and URL."
+                )
+                st.session_state.pop("api_credentials", None)
+            except Exception as e:
+                st.error(f"Error: {e}")
+                st.session_state.pop("projects", None)
+
+    if st.session_state.get("projects"):
+        project = st.selectbox(
+            "Select project", st.session_state["projects"], index=None
+        )
+        if project and (st.session_state.get("current_project") != project):
+            st.session_state["current_project"] = project
+            with st.spinner(f"Downloading project '{project}'..."):
+                try:
+                    project_tmp = tempfile.mkdtemp("snomed_gui_dir")
+                    creds = st.session_state["api_credentials"]
+                    project_zip = get_project_zip(
+                        project_tmp,
+                        creds["url"],
+                        creds["username"],
+                        creds["password"],
+                        project,
+                        False,
+                    )
+                    if isinstance(project_zip, pathlib.Path):
+                        st.session_state["zip_file"] = project_zip
+                    else:
+                        st.error("Could not load project from INCEpTION API.")
+                except Exception as e:
+                    st.error(f"Error downloading project: {e}")

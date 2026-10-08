@@ -1,0 +1,22 @@
+#!/bin/bash
+
+DOCKER_IMAGE=""
+CURRENT_VERSION="1.0.0"
+DEFAULT_PORT="8501"
+
+if [[ $# -eq 0 ]]; then
+    VERSION=$CURRENT_VERSION
+    PORT=$DEFAULT_PORT
+elif [[ $# -eq 1 ]]; then
+    VERSION=$CURRENT_VERSION
+    PORT=$1
+elif [[ $# -eq 2 ]]; then
+    VERSION=$2
+    PORT=$1
+fi
+
+docker run \
+--rm \
+-p "${PORT}":8501 \
+"${DOCKER_IMAGE}":"${VERSION}" \
+start-gui
