@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version number of the snomed postprocessing release'
+        description: 'Version number of the SNOMED annotation audit release'
         default: ''
         required: true
         type: string
@@ -42,7 +42,7 @@ jobs:
         id: push
         uses: docker/build-push-action@v6
         with:
-          context: ./snomed-postprocessing
+          context: .
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.version }}
           build-args: VERSION=${{inputs.version}}
