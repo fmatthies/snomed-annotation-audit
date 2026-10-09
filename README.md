@@ -1,11 +1,11 @@
 # SNOMED Annotation Audit
 
-Audit SNOMED CT annotations in INCEpTION/UIMA exports against materialized inclusion-list/exclusion-list policy HDF5 files:
+Audit SNOMED CT annotations in INCEpTION/UIMA exports (XMI/JSON) against materialized inclusion-list/exclusion-list policy HDF5 files:
 
 - critical document logging for concepts that are not on the inclusion list or are on the exclusion list;
 - HDF5 policy creation from Snowstorm;
 - HDF5 policy creation from SNOMED CT RF2 release ZIPs;
-- Streamlit UI for selecting inputs and running the audit.
+- Streamlit UI (see GUI section below) for more comfortably selecting inputs and running the audit.
 
 ## Commands
 
@@ -24,7 +24,7 @@ uv run log-critical-documents \
   --lists-path /path/to/policy.hdf5 \
   /path/to/inception-json-or-xmi-export.zip
 ```
-
+The INCEpTION exports need to be performed with "additional format" JSON or XMI.
 The audit reports annotations as critical when:
 
 | Check | Critical when |
