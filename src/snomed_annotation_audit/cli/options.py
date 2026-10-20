@@ -164,7 +164,11 @@ def create_concept_id_dump_options(fnc):
         "--dump-mode",
         default=DumpMode.VERSION,
         type=ClickEnumChoice(DumpMode),
-        help="Whether to create/update an inclusion-list ('version') or exclusion-list ('semantic') policy view.",
+        help=(
+            "Policy mode. In RF2 ZIP mode, 'version' creates an inclusion-list view and also an "
+            "exclusion-list view when --filter-list is supplied; 'semantic' creates only the "
+            "exclusion-list view. In Snowstorm mode, each mode creates its corresponding view."
+        ),
     )(fnc)
     fnc = click.option(
         "--branch",

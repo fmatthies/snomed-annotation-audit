@@ -24,7 +24,7 @@ uv run log-critical-documents \
   --lists-path /path/to/policy.hdf5 \
   /path/to/inception-json-or-xmi-export.zip
 ```
-The INCEpTION exports need to be performed with "additional format" JSON or XMI.
+The INCEpTION project export must include documents in the additional JSON or XMI format.
 The audit reports annotations as critical when:
 
 | Check | Critical when |
@@ -55,8 +55,12 @@ uv run create-concepts-dump \
   --rf2-view snapshot \
   --policy-date YYYYMMDD \
   --output data/policy.hdf5 \
+  --dump-mode version \
+  --filter-list config/exclusion_list_filter_tags.txt \
   138875005
 ```
+
+In Snapshot mode, `--policy-date` must match the release date of the selected RF2 Snapshot. Snapshot files cannot reconstruct an earlier date.
 
 For RF2 Full releases, use:
 
@@ -66,12 +70,16 @@ uv run create-concepts-dump \
   --rf2-view full \
   --policy-date YYYYMMDD \
   --output data/policy.hdf5 \
+  --dump-mode version \
+  --filter-list config/exclusion_list_filter_tags.txt \
   138875005
 ```
 
-Exclusion list policy rules can be embedded with `--dump-mode semantic --filter-list <file-or-rule>`.
+In RF2 ZIP mode, `--dump-mode version` is the default. Combined with `--filter-list`, it creates both policy views in one run: the positional root concept and its active descendants form the inclusion list, while the filter-list rules form the exclusion list. The filter list may contain semantic tags or SNOMED CT concept IDs. Semantic tags exclude matching active concepts; concept IDs exclude those concepts and their active descendants. The resulting concept indices are materialized in the HDF5; the original rules are not stored.
 
-## Create HDF5 policy file from Snowstorm
+Use `--dump-mode semantic` when creating only the RF2 exclusion-list view. Add `--force-overwrite` when replacing an exclusion-list view that already exists in the output file.
+
+## Optionally create HDF5 policy file from Snowstorm
 
 ```bash
 uv run create-concepts-dump \
@@ -108,7 +116,7 @@ The GUI supports selecting an INCEpTION project ZIP and a policy HDF5, choosing 
 
 ## Docker images and helper scripts
 
-There are default images hosted at:
+The default image is hosted at:
 
 ```text
 ghcr.io/fmatthies/snomed-annotation-audit/audit-image:<version>
@@ -145,12 +153,13 @@ Use `log-inception-docs.sh` to run `log-critical-documents` in Docker against an
 ./log-inception-docs.sh PROJECT_EXPORT.zip
 ```
 
-The script mounts local `./data` to `/app/data` in the container. Put the INCEpTION ZIP and the required HDF5 policy file in `./data`; generated reports are written back there.
+The script mounts local `./data` to `/app/data` in the container. Put the INCEpTION ZIP and policy HDF5 file in `./data`; generated reports are written back there. If `./data` contains exactly one `.hdf5` or `.h5` file, the script selects it automatically.
 
-The second argument optionally selects the image version:
+The second argument optionally selects the image version. If multiple HDF5 files exist, use the third argument to select the policy file:
 
 ```bash
 ./log-inception-docs.sh PROJECT_EXPORT.zip 1.0.0
+./log-inception-docs.sh PROJECT_EXPORT.zip 1.0.0 policy.hdf5
 ```
 
 Example direct Docker invocation:

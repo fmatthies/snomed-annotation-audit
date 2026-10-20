@@ -117,7 +117,7 @@ def create_concept_id_dump(
     help="Render the metadata summary as Markdown.",
 )
 def summarize_hdf5(hdf5_path: pathlib.Path, markdown: bool):
-    """Print a concise metadata summary for a SNOMED postprocessing HDF5 file."""
+    """Print a concise metadata summary for a SNOMED annotation audit HDF5 file."""
     summary = inspect_hdf5_metadata(hdf5_path)
     click.echo(format_hdf5_metadata_summary(summary, markdown=markdown))
 
