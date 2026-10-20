@@ -5,9 +5,43 @@ Audit SNOMED CT annotations in INCEpTION/UIMA exports (XMI/JSON) against materia
 - critical document logging for concepts that are not on the inclusion list or are on the exclusion list;
 - HDF5 policy creation from Snowstorm;
 - HDF5 policy creation from SNOMED CT RF2 release ZIPs;
-- Streamlit UI (see GUI section below) for more comfortably selecting inputs and running the audit.
+- Streamlit GUI for selecting inputs, reviewing grouped findings, and downloading reports.
 
-## Commands
+> [!IMPORTANT]
+> Every audit requires a policy HDF5 file containing the materialized inclusion and exclusion lists. You can create this file from a [SNOMED CT RF2 release ZIP](#create-hdf5-policy-file-from-rf2-release-zip) or, optionally, from a [Snowstorm server](#optionally-create-hdf5-policy-file-from-snowstorm). If you already have a suitable policy HDF5 file, you can proceed directly to the GUI or command-line workflow.
+
+## Recommended: Run audits with the GUI
+
+The Streamlit GUI is the easiest way to run an annotation audit. It supports:
+
+- uploading an INCEpTION project export;
+- uploading an inclusion-list/exclusion-list policy HDF5 file;
+- selecting the annotation layers to audit;
+- filtering and reviewing findings grouped by document and annotator;
+- downloading JSON and Markdown reports.
+
+Start the published Docker image with the included helper script:
+
+```bash
+./start-gui.sh
+```
+
+Then open <http://localhost:8501>.
+
+Alternatively, run the GUI locally:
+
+```bash
+uv run streamlit run src/snomed_annotation_audit/gui/app.py
+```
+
+### GUI workflow
+
+1. Upload an INCEpTION project ZIP.
+2. Upload an existing policy HDF5 file, or [create one using the instructions below](#create-hdf5-policy-file-from-rf2-release-zip).
+3. Select the annotation layers and run the policy check.
+4. Review the grouped findings and download the reports.
+
+## Command-line usage
 
 ```text
 log-critical-documents
@@ -106,14 +140,6 @@ uv run create-concepts-dump \
 uv run summarize-hdf5 data/policy.hdf5 --markdown
 ```
 
-## Streamlit GUI
-
-```bash
-uv run streamlit run src/snomed_annotation_audit/gui/app.py
-```
-
-The GUI supports selecting an INCEpTION project ZIP and a policy HDF5, choosing annotation layers, and running the inclusion-list/exclusion-list audit.
-
 ## Docker images and helper scripts
 
 The default image is hosted at:
@@ -124,7 +150,7 @@ ghcr.io/fmatthies/snomed-annotation-audit/audit-image:<version>
 
 The repository includes helper scripts for common Docker runs.
 
-### Start the GUI
+#### Start the GUI
 
 Use `start-gui.sh` to run the default published GUI image:
 
@@ -145,7 +171,7 @@ You can override the port and/or image version:
 ./start-gui.sh 8502 1.0.0
 ```
 
-### Log an INCEpTION project ZIP
+#### Log an INCEpTION project ZIP
 
 Use `log-inception-docs.sh` to run `log-critical-documents` in Docker against an INCEpTION project ZIP stored in `./data`:
 
