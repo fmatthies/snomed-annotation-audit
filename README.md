@@ -47,7 +47,7 @@ Useful options:
 
 Use `--id-prefix ""` when annotations store plain SCTIDs.
 
-## Create HDF5 from RF2 release ZIP
+## Create HDF5 policy file from RF2 release ZIP
 
 ```bash
 uv run create-concepts-dump \
@@ -71,7 +71,7 @@ uv run create-concepts-dump \
 
 Exclusion list policy rules can be embedded with `--dump-mode semantic --filter-list <file-or-rule>`.
 
-## Create HDF5 from Snowstorm
+## Create HDF5 policy file from Snowstorm
 
 ```bash
 uv run create-concepts-dump \
